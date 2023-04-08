@@ -1,20 +1,23 @@
-FROM richarvey/nginx-php-fpm:1.7.2
+FROM php:8.0-apache
+
+RUN apt-get update && \
+    apt-get install -y libicu-dev libonig-dev libzip-dev zip && \
+    docker-php-ext-install intl pdo pdo_mysql && \
+    docker-php-ext-configure zip && \
+    docker-php-ext-install zip && \
+    a2enmod rewrite
+
+WORKDIR /var/www/html
 
 COPY . .
-
-# Image config
-ENV SKIP_COMPOSER 1
-ENV WEBROOT /var/www/html/public
-ENV PHP_ERRORS_STDERR 1
-ENV RUN_SCRIPTS 1
-ENV REAL_IP_HEADER 1
 
 # Laravel config
 ENV APP_ENV production
 ENV APP_DEBUG false
 ENV LOG_CHANNEL stderr
 
-# Allow composer to run as root
-ENV COMPOSER_ALLOW_SUPERUSER 1
+RUN chown -R www-data:www-data /var/www/html/storage
 
-CMD ["/start.sh"]
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+
+EXPOSE 80
