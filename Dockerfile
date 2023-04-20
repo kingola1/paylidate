@@ -1,23 +1,33 @@
-FROM php:8.0-apache
+FROM php:7.4-apache
 
 RUN apt-get update && \
-    apt-get install -y libicu-dev libonig-dev libzip-dev zip && \
-    docker-php-ext-install intl pdo pdo_mysql && \
-    docker-php-ext-configure zip && \
-    docker-php-ext-install zip && \
-    a2enmod rewrite
+    apt-get install -y \
+        libzip-dev \
+        unzip \
+        git \
+        libonig-dev \
+        libxml2-dev \
+        libpng-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
+        && docker-php-ext-install \
+            pdo_mysql \
+            mysqli \
+            mbstring \
+            zip \
+            exif \
+            pcntl \
+            bcmath \
+            opcache \
+            && docker-php-ext-configure gd \
+            --with-freetype=/usr/include/ \
+            --with-jpeg=/usr/include/ \
+            && docker-php-ext-install gd
 
-WORKDIR /var/www/html
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-COPY . .
+COPY . /var/www/html
 
-# Laravel config
-ENV APP_ENV production
-ENV APP_DEBUG false
-ENV LOG_CHANNEL stderr
+RUN composer install --no-dev --optimize-autoloader
 
-RUN chown -R www-data:www-data /var/www/html/storage
-
-RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
-
-EXPOSE 80
+RUN chown -R www-data:www-data /var/www/html
